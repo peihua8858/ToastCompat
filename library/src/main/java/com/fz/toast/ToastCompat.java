@@ -1,42 +1,29 @@
 package com.fz.toast;
 
-import android.app.Activity;
-import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.TextView;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
-import androidx.core.app.NotificationManagerCompat;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
- * toast兼容处理
- * 解决因关闭通知导致系统toast不显示的问题
+ * 兼容吐司,解决7.1 报token null is not valid
+ * 及关闭通知无法显示toast的问题
  *
  * @author dingpeihua
  * @version 1.0
- * @date 2019/2/22 09:39
+ * @date 2019/10/16 21:14
  */
-public final class ToastCompat {
-    static final long SHORT_DURATION_TIMEOUT = 2000;
-    static final long LONG_DURATION_TIMEOUT = 3500;
+public class ToastCompat {
     /**
      * Show the view or text notification for a short period of time.  This time
      * could be user-definable.  This is the default.
@@ -61,257 +48,57 @@ public final class ToastCompat {
     public @interface Duration {
     }
 
-    private ToastCompat() {
-        throw new AssertionError("Can not initialize.");
-    }
+    final WindowHelper mHelper;
+    static final ToastQueueHandler mHandler = new ToastQueueHandler();
 
     /**
-     * 记录是否已经调用过
-     */
-    private static Activity mActivity;
-    static ActivityLifecycleManager lifecycleManager;
-    static Context mContext;
-    private static Handler mHandler = new Handler();
-    static ToastQueueHandler mToastHelper;
-    static int mGravity;
-    static int mYOffset, mXOffset = 0;
-    static int mToastLayout;
-
-    public static void initialize(Context context) {
-        if (mContext == null) {
-            initializeAttr(context);
-            mContext = context.getApplicationContext();
-            lifecycleManager = new ActivityLifecycleManager(mContext);
-            lifecycleManager.registerCallbacks(new ActivityLifecycleManager.Callbacks() {
-                @Override
-                public void onActivityCreated(Activity activity, Bundle bundle) {
-                    mActivity = activity;
-                }
-
-                @Override
-                public void onActivityStarted(Activity activity) {
-                    mActivity = activity;
-                }
-
-                @Override
-                public void onActivityResumed(Activity activity) {
-                    mActivity = activity;
-                }
-
-                @Override
-                public void onActivityDestroyed(Activity activity) {
-                    if (mActivity == activity) {
-                        mActivity = null;
-                    }
-                }
-            });
-        }
-    }
-
-    private static void initializeAttr(Context context) {
-        Resources resources = context.getResources();
-        if (mYOffset == 0) {
-            int yOffsetId = resolveResourceId(context, R.attr.toastDefaultYOffset);
-            if (yOffsetId == 0) {
-                yOffsetId = R.dimen.toast_default_y_offset;
-            }
-            mYOffset = resources.getDimensionPixelSize(yOffsetId);
-        }
-        if (mToastLayout == 0) {
-            mToastLayout = resolveResourceId(context, R.attr.ToastLayout);
-        }
-        if (mGravity == 0) {
-            int gravityId = resolveResourceId(context, R.attr.toastDefaultGravity);
-            if (gravityId != 0) {
-                mGravity = resources.getInteger(gravityId);
-            }
-            mGravity = mGravity == 0 ? Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL : mGravity;
-        }
-    }
-
-    static int resolveResourceId(@NonNull Context context, int attrId) {
-        if (context instanceof Activity) {
-            TypedValue outValue = new TypedValue();
-            boolean result = context.getTheme().resolveAttribute(attrId, outValue, true);
-            if (result) {
-                return outValue.resourceId;
-            }
-        }
-        return 0;
-    }
-
-    static Activity getActivity() {
-        return mActivity;
-    }
-
-    static class ActivityLifecycleManager {
-        private final Application application;
-        private ActivityLifecycleManager.ActivityLifecycleCallbacksWrapper callbacksWrapper;
-
-        public ActivityLifecycleManager(Context context) {
-            this.application = (Application) context.getApplicationContext();
-            this.callbacksWrapper = new ActivityLifecycleManager.ActivityLifecycleCallbacksWrapper(this.application);
-        }
-
-        public boolean registerCallbacks(ActivityLifecycleManager.Callbacks callbacks) {
-            return this.callbacksWrapper != null && this.callbacksWrapper.registerLifecycleCallbacks(callbacks);
-        }
-
-        public void resetCallbacks() {
-            if (this.callbacksWrapper != null) {
-                this.callbacksWrapper.clearCallbacks();
-            }
-        }
-
-        private static class ActivityLifecycleCallbacksWrapper {
-            private final Set<Application.ActivityLifecycleCallbacks> registeredCallbacks = new HashSet();
-            private final Application application;
-
-            ActivityLifecycleCallbacksWrapper(Application application) {
-                this.application = application;
-            }
-
-            private void clearCallbacks() {
-                Iterator var1 = this.registeredCallbacks.iterator();
-
-                while (var1.hasNext()) {
-                    Application.ActivityLifecycleCallbacks callback = (Application.ActivityLifecycleCallbacks) var1.next();
-                    this.application.unregisterActivityLifecycleCallbacks(callback);
-                }
-
-            }
-
-            private boolean registerLifecycleCallbacks(final ActivityLifecycleManager.Callbacks callbacks) {
-                if (this.application != null) {
-                    this.application.registerActivityLifecycleCallbacks(callbacks);
-                    this.registeredCallbacks.add(callbacks);
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        }
-
-        /**
-         * activity生命周期回调
-         *
-         * @author dingpeihua
-         * @version 1.0
-         * @date 2018/9/6 22:11
-         */
-        public abstract static class Callbacks implements Application.ActivityLifecycleCallbacks {
-
-
-            /**
-             * activity 创建
-             *
-             * @param activity
-             * @param bundle
-             * @author dingpeihua
-             * @date 2018/9/6 22:11
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivityCreated(Activity, Bundle)}
-             */
-            @Override
-            public void onActivityCreated(Activity activity, Bundle bundle) {
-            }
-
-            /**
-             * @param activity
-             * @author dingpeihua
-             * @date 2018/9/6 22:13
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivityStarted(Activity)}
-             */
-            @Override
-            public void onActivityStarted(Activity activity) {
-            }
-
-            /**
-             * @param activity
-             * @author dingpeihua
-             * @date 2018/9/6 22:13
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivityResumed(Activity)}
-             */
-            @Override
-            public void onActivityResumed(Activity activity) {
-            }
-
-            /**
-             * @param activity
-             * @author dingpeihua
-             * @date 2018/9/6 22:13
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivityPaused(Activity)}
-             */
-            @Override
-            public void onActivityPaused(Activity activity) {
-            }
-
-            /**
-             * @param activity
-             * @author dingpeihua
-             * @date 2018/9/6 22:13
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivityStopped(Activity)}
-             */
-            @Override
-            public void onActivityStopped(Activity activity) {
-            }
-
-            /**
-             * @param activity
-             * @author dingpeihua
-             * @date 2018/9/6 22:13
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivitySaveInstanceState(Activity, Bundle)}
-             */
-            @Override
-            public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
-            }
-
-            /**
-             * @param activity
-             * @author dingpeihua
-             * @date 2018/9/6 22:13
-             * @version 1.0
-             * @see {@link Application.ActivityLifecycleCallbacks#onActivityDestroyed(Activity)}
-             */
-            @Override
-            public void onActivityDestroyed(Activity activity) {
-            }
-        }
-    }
-
-
-    static boolean checkThread() {
-        return Looper.getMainLooper() == Looper.myLooper();
-    }
-
-    /**
-     * 是否打开通知
+     * Construct an empty Toast object.  You must call {@link #setView} before you
+     * can call {@link #show}.
      *
-     * @param context
-     * @author dingpeihua
-     * @date 2019/2/22 09:53
-     * @version 1.0
+     * @param context The context to use.  Usually your {@link android.app.Application}
+     *                or {@link android.app.Activity} object.
      */
-    static boolean isNotificationEnabled(Context context) {
-        return NotificationManagerCompat.from(context).areNotificationsEnabled();
+    public ToastCompat(Context context) {
+        Context applicationContext = context.getApplicationContext();
+        mHelper = new WindowHelper(applicationContext);
+        int offsetY = applicationContext.getResources().getDimensionPixelSize(Resources.getSystem()
+                .getIdentifier("toast_y_offset", "dimen", "android"));
+        int gravity = compatGetToastDefaultGravity(applicationContext);
+        setGravity(gravity, 0, offsetY);
+        mHandler.register(context);
+    }
+
+    private int compatGetToastDefaultGravity(Context context) {
+        int toastDefaultGravityId = Resources.getSystem().getIdentifier("config_toastDefaultGravity",
+                "integer", "android");
+        if (toastDefaultGravityId != 0) {
+            return context.getResources().getInteger(toastDefaultGravityId);
+        } else {
+            return Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+        }
     }
 
     /**
-     * Make a standard toast that just contains a text view.
-     *
-     * @param context  The context to use.  Usually your {@link android.app.Application}
-     *                 or {@link android.app.Activity} object.
-     * @param text     The text to show.  Can be formatted text.
-     * @param duration How long to display the message.  Either {@link Toast#LENGTH_SHORT} or
-     *                 {@link Toast#LENGTH_LONG}
+     * Make a standard toast to display using the specified looper.
+     * If looper is null, Looper.myLooper() is used.
      */
-    public static Toast makeText(Context context, CharSequence text, @Duration int duration) {
-        return createToast(context, text, duration);
+    public static ToastCompat makeText(@NonNull Context context, @LayoutRes int layoutRes, @NonNull CharSequence text, @Duration int duration) {
+        ToastCompat result = new ToastCompat(checkedContext(context));
+        result.setText(text);
+        result.setView(layoutRes);
+        result.setDuration(duration);
+        return result;
+    }
+
+    /**
+     * Make a standard toast to display using the specified looper.
+     * If looper is null, Looper.myLooper() is used.
+     */
+    public static ToastCompat makeText(@NonNull Context context, @NonNull CharSequence text, @Duration int duration) {
+        ToastCompat result = new ToastCompat(checkedContext(context));
+        result.setText(text);
+        result.setDuration(duration);
+        return result;
     }
 
     /**
@@ -320,264 +107,214 @@ public final class ToastCompat {
      * @param context  The context to use.  Usually your {@link android.app.Application}
      *                 or {@link android.app.Activity} object.
      * @param resId    The resource id of the string resource to use.  Can be formatted text.
-     * @param duration How long to display the message.  Either {@link Toast#LENGTH_SHORT} or
-     *                 {@link Toast#LENGTH_LONG}
+     * @param duration How long to display the message.  Either {@link #LENGTH_SHORT} or
+     *                 {@link #LENGTH_LONG}
      * @throws Resources.NotFoundException if the resource can't be found.
      */
-    public static Toast makeText(Context context, @StringRes int resId, @Duration int duration)
-            throws Resources.NotFoundException {
-        return makeText(context, context.getResources().getText(resId), duration);
+    public static ToastCompat makeText(Context context, @StringRes int resId, @Duration int duration) throws Resources.NotFoundException {
+        return makeText(checkedContext(context)).setText(resId).setDuration(duration);
     }
 
-
     /**
-     * 短时间自定义显示布局Toast提示,Toast显示在默认的位置
-     *
-     * @param context  当前上下文
-     * @param layoutId 自定义显示布局文件ID
-     * @param message  显示字符串文本
+     * Make a standard toast to display using the specified looper.
+     * If looper is null, Looper.myLooper() is used.
      */
-    public static Toast makeText(Context context, @LayoutRes int layoutId, @NonNull String message) {
-        return makeText(context, LayoutInflater.from(context).inflate(layoutId, null), message);
-    }
-
-    public static Toast makeText(Context context, @LayoutRes int layoutId, @StringRes int resId, @Duration int duration) {
-        return makeText(context, makeView(context, layoutId), context.getString(resId), duration);
+    public static ToastCompat makeText(@NonNull Context context, @LayoutRes int layoutRes) {
+        return new ToastCompat(checkedContext(context)).setView(layoutRes);
     }
 
     /**
-     * 短时间自定义显示布局Toast提示,Toast显示在默认的位置
+     * Make a standard toast to display using the specified looper.
+     * If looper is null, Looper.myLooper() is used.
+     */
+    public static ToastCompat makeText(Context context) {
+        ToastCompat result = new ToastCompat(checkedContext(context));
+        return result;
+    }
+
+    /**
+     * Check current context
      *
-     * @param context 当前上下文
-     * @param view    自定义view
-     * @param message 显示字符串文本
+     * @param context
      * @author dingpeihua
-     * @date 2019/2/22 10:04
+     * @date 2019/10/25 11:31
      * @version 1.0
      */
-    public static Toast makeText(Context context, View view, @NonNull String message) {
-        return makeText(context, view, message, LENGTH_SHORT);
-    }
-
-    /**
-     * 短时间自定义显示布局Toast提示,Toast显示在默认的位置
-     *
-     * @param context 当前上下文
-     * @param view    自定义view
-     * @param message 显示字符串文本
-     * @author dingpeihua
-     * @date 2019/2/22 10:04
-     * @version 1.0
-     */
-    public static Toast makeText(Context context, View view, @NonNull String message, @Duration int duration) {
-        Toast toast = createToast(context, message, duration);
-        toast.setView(view);
-        toast.setText(message);
-        toast.setDuration(duration);
-        return toast;
-    }
-
-    /**
-     * 短时间自定义显示布局Toast提示,Toast显示在默认的位置
-     *
-     * @param context 当前上下文
-     * @param view    自定义view
-     * @param message 显示字符串文本
-     * @author dingpeihua
-     * @date 2019/2/22 10:04
-     * @version 1.0
-     */
-    public static Toast makeText(Context context, View view, @NonNull String message,
-                                 @Duration int duration, int gravity, int xOffset, int yOffset) {
-        Toast toast = createToast(context, message, duration);
-        toast.setView(view);
-        toast.setText(message);
-        toast.setDuration(duration);
-        toast.setGravity(gravity, xOffset, yOffset);
-        return toast;
-    }
-
-    static Toast createToast(Context context, View view, CharSequence text, @Duration int duration) {
+    static Context checkedContext(Context context) {
+        if (context == null && mHandler.application == null) {
+            throw new NullPointerException("Please call the registration method to register first.");
+        }
         if (context == null) {
-            throw new NullPointerException("Context can not null.");
+            return mHandler.application;
         }
-        if (mContext == null) {
-            initialize(context);
-        }
-        initializeAttr(context);
-        if (view == null) {
-            view = makeView(context);
-        }
-        return SupportToast.makeText(context, view, text, duration);
-    }
-
-    static Toast createToast(Context context, CharSequence text, @Duration int duration) {
-        return createToast(context, null, text, duration);
-    }
-
-    static View makeView(Context context) {
-        int toastLayout = ToastCompat.mToastLayout;
-        if (toastLayout == 0) {
-            Resources resources = context.getResources();
-            toastLayout = resources.getIdentifier("transient_notification", "layout", "android");
-        }
-        return makeView(context, toastLayout);
-    }
-
-    static View makeDefaultView() {
-        return makeView(checkContext());
-    }
-
-    static View makeView(Context context, @LayoutRes int layoutId) {
-        LayoutInflater inflate = LayoutInflater.from(context);
-        View view = inflate.inflate(layoutId, null);
-        return view;
-    }
-
-    static long checkDuration(int duration) {
-        return duration == LENGTH_SHORT ? SHORT_DURATION_TIMEOUT : LONG_DURATION_TIMEOUT;
+        return context;
     }
 
     /**
-     * 短时间Toast提示
-     *
-     * @param layoutId
-     * @param resId    资源ID，在res/string.xml中配置的字符ID
-     * @param gravity
-     * @param xOffset
-     * @param yOffset
+     * Show the view for the specified duration.
      */
-    public static void show(@LayoutRes int layoutId, @StringRes int resId, @Duration int duration,
-                            int gravity, int xOffset, int yOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(mContext.getString(resId))
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .gravity(gravity)
-                .duration(duration)
-                .xOffset(xOffset)
-                .yOffset(yOffset)
-                .build());
+    public void show() {
+        mHandler.addToast(this);
     }
 
     /**
-     * 短时间Toast提示
-     *
-     * @param layoutId
-     * @param resId    资源ID，在res/string.xml中配置的字符ID
-     * @param gravity
-     * @param xOffset
-     * @param yOffset
+     * Close the view if it's showing, or don't show it if it isn't showing yet.
+     * You do not normally have to call this.  Normally view will disappear on its own
+     * after the appropriate duration.
      */
-    public static void show(@LayoutRes int layoutId, @StringRes int resId, int gravity, int xOffset, int yOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(mContext.getString(resId))
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .gravity(gravity)
-                .xOffset(xOffset)
-                .yOffset(yOffset)
-                .build());
+    public void cancel() {
+        mHelper.handleHide();
     }
 
     /**
-     * 短时间Toast提示
-     *
-     * @param layoutId
-     * @param message  提示文本
-     * @param gravity
-     * @param xOffset
-     * @param yOffset
+     * Set the view to show.
      */
-    public static void show(@LayoutRes int layoutId, String message, int gravity, int xOffset, int yOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .gravity(gravity)
-                .xOffset(xOffset)
-                .yOffset(yOffset)
-                .build());
-    }
-
-    public static void showToast(String message, int gravity) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .gravity(gravity)
-                .build());
-    }
-
-    public static void show(String message, int gravity, int xOffset, int yOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .gravity(gravity)
-                .xOffset(xOffset)
-                .yOffset(yOffset)
-                .build());
-    }
-
-    public static void show(View view, String message, int gravity, int xOffset, int yOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(view)
-                .gravity(gravity)
-                .xOffset(xOffset)
-                .yOffset(yOffset)
-                .build());
-    }
-
-    public static void show(@LayoutRes int layoutId, String message, int gravity, int xOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .gravity(gravity)
-                .xOffset(xOffset)
-                .build());
-    }
-
-    public static void show(View view, String message, int gravity, int xOffset) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(view)
-                .gravity(gravity)
-                .xOffset(xOffset)
-                .build());
-    }
-
-    public static void show(@LayoutRes int layoutId, String message, int gravity) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .gravity(gravity)
-                .build());
-    }
-
-    public static void show(@LayoutRes int layoutId, String message) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .build());
-    }
-
-    public static void show(View view, String message, int gravity) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(view)
-                .gravity(gravity)
-                .build());
-    }
-
-    public static void show(View view, String message) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .view(view)
-                .build());
+    public ToastCompat setView(View view) {
+        mHelper.mNextView = view;
+        return this;
     }
 
     /**
-     * 短时间Toast提示
-     *
-     * @param message 要提示的信息
+     * Set the view to show.
      */
-    public static void show(@NonNull String message) {
-        show(message, Toast.LENGTH_SHORT);
+    public ToastCompat setView(@LayoutRes int layoutRes) {
+        mHelper.mLayoutRes = layoutRes;
+        return this;
+    }
+
+    /**
+     * Return the view.
+     *
+     * @see #setView
+     */
+    public View getView() {
+        return mHelper.mNextView;
+    }
+
+    /**
+     * Set how long to show the view for.
+     *
+     * @see #LENGTH_SHORT
+     * @see #LENGTH_LONG
+     */
+    public ToastCompat setDuration(@Duration int duration) {
+        mHelper.mDuration = duration;
+        return this;
+    }
+
+    /**
+     * Return the duration.
+     *
+     * @see #setDuration
+     */
+    @Duration
+    public int getDuration() {
+        return mHelper.mDuration;
+    }
+
+    /**
+     * Set the margins of the view.
+     *
+     * @param horizontalMargin The horizontal margin, in percentage of the
+     *                         container width, between the container's edges and the
+     *                         notification
+     * @param verticalMargin   The vertical margin, in percentage of the
+     *                         container height, between the container's edges and the
+     *                         notification
+     */
+    public ToastCompat setMargin(float horizontalMargin, float verticalMargin) {
+        mHelper.mHorizontalMargin = horizontalMargin;
+        mHelper.mVerticalMargin = verticalMargin;
+        return this;
+    }
+
+    /**
+     * Return the horizontal margin.
+     */
+    public float getHorizontalMargin() {
+        return mHelper.mHorizontalMargin;
+    }
+
+    /**
+     * Return the vertical margin.
+     */
+    public float getVerticalMargin() {
+        return mHelper.mVerticalMargin;
+    }
+
+    /**
+     * Set the location at which the notification should appear on the screen.
+     *
+     * @see android.view.Gravity
+     */
+    public ToastCompat setGravity(int gravity, int xOffset, int yOffset) {
+        mHelper.mGravity = gravity;
+        mHelper.mX = xOffset;
+        mHelper.mY = yOffset;
+        return this;
+    }
+
+    /**
+     * Get the location at which the notification should appear on the screen.
+     *
+     * @see android.view.Gravity
+     * @see #getGravity
+     */
+    public int getGravity() {
+        return mHelper.mGravity;
+    }
+
+    /**
+     * Return the X offset in pixels to apply to the gravity's location.
+     */
+    public int getXOffset() {
+        return mHelper.mX;
+    }
+
+    /**
+     * Return the Y offset in pixels to apply to the gravity's location.
+     */
+    public int getYOffset() {
+        return mHelper.mY;
+    }
+
+    /**
+     * Gets the LayoutParams for the Toast window.
+     */
+    public WindowManager.LayoutParams getWindowParams() {
+        return mHelper.mParams;
+    }
+
+    /**
+     * Update the text in a Toast that was previously created using one of the makeText() methods.
+     *
+     * @param resId The new text for the Toast.
+     */
+    public ToastCompat setText(@StringRes int resId) {
+        mHelper.mTextResId = resId;
+        return this;
+    }
+
+    /**
+     * Update the text in a Toast that was previously created using one of the makeText() methods.
+     *
+     * @param s The new text for the Toast.
+     */
+    public ToastCompat setText(CharSequence s) {
+        mHelper.mText = s;
+        return this;
+    }
+
+    /**
+     * 注册Toast
+     *
+     * @param context
+     * @author dingpeihua
+     * @date 2019/10/25 11:14
+     * @version 1.0
+     */
+    public static void register(Context context) {
+        ToastLifecycle.register(mHandler, context);
     }
 
     /**
@@ -586,11 +323,26 @@ public final class ToastCompat {
      * @param message  提示文本
      * @param duration 停留时间
      */
-    public static void show(String message, @Duration int duration) {
-        createToast(ToastMsg.crateBuilder()
-                .message(message)
-                .duration(duration)
-                .build());
+    private static void showToast(Context context, String message, int duration) {
+        ToastCompat.makeText(context).setText(message).setDuration(duration).show();
+    }
+
+    /**
+     * 显示Toast提示
+     *
+     * @param resId 提示文本资源ID
+     */
+    private static void showToast(Context context, int resId) {
+        makeText(context).setText(resId).show();
+    }
+
+    /**
+     * 短时间Toast提示
+     *
+     * @param message 要提示的信息
+     */
+    public static void showShortMessage(Context context, @NonNull String message) {
+        makeText(context).setText(message).show();
     }
 
     /**
@@ -598,8 +350,65 @@ public final class ToastCompat {
      *
      * @param resId 资源ID，在res/string.xml中配置的字符ID
      */
-    public static void show(@StringRes int resId) {
-        show(resId, LENGTH_SHORT);
+    public static void showShortMessage(Context context, @StringRes int resId) {
+        makeText(context).setText(resId).show();
+    }
+
+    /**
+     * 短时间自定义显示布局Toast提示,Toast显示在默认的位置
+     *
+     * @param layoutId 自定义显示布局文件ID
+     * @param message  显示字符串文本
+     */
+    public static void showShortMessage(Context context, @LayoutRes int layoutId, @NonNull String message) {
+        makeText(context).setView(layoutId).setText(message).show();
+    }
+
+
+    /**
+     * 长时间Toast提示
+     *
+     * @param message 要提示的信息
+     */
+    public static void showLongMessage(Context context, @NonNull String message) {
+        makeText(context).setText(message).setDuration(ToastCompat.LENGTH_LONG).show();
+    }
+
+    /**
+     * 长时间Toast提示
+     *
+     * @param resId 资源ID
+     */
+    public static void showLongMessage(Context context, @StringRes int resId) {
+        makeText(context).setText(resId).setDuration(ToastCompat.LENGTH_LONG).show();
+    }
+
+    /**
+     * 自定义Toast提示停留时间
+     *
+     * @param message  要提示的信息
+     * @param duration 停留时间毫秒数，以毫秒为单位
+     */
+    public static void showMessage(Context context, @NonNull String message, int duration) {
+        makeText(context).setText(message).setDuration(duration).show();
+    }
+
+    /**
+     * 长时间Toast提示
+     *
+     * @param resId 资源ID
+     */
+    public static void showMessage(Context context, @StringRes int resId) {
+        makeText(context).setText(resId).show();
+    }
+
+    /**
+     * 自定义Toast提示停留时间
+     *
+     * @param message 要提示的信息
+     */
+    public static void showMessage(Context context, @NonNull String message) {
+        makeText(context).setText(message).setDuration(ToastCompat.LENGTH_SHORT).show();
     }
 
     /**
@@ -608,11 +417,103 @@ public final class ToastCompat {
      * @param resId    要提示的信息，字符串资源ID
      * @param duration 停留时间毫秒数，以毫秒为单位
      */
-    public static void show(@StringRes int resId, @Duration int duration) {
-        createToast(ToastMsg.crateBuilder()
-                .message(mContext.getString(resId))
-                .duration(duration)
-                .build());
+    public static void showToast(Context context, @StringRes int resId, int duration) {
+        makeText(context).setText(resId).setDuration(duration).show();
+    }
+
+
+    /**
+     * 显示Toast提示
+     *
+     * @param message  提示文本
+     * @param duration 停留时间
+     */
+    private static void showToast(String message, int duration) {
+        ToastCompat.makeText(mHandler.application).setText(message).setDuration(duration).show();
+    }
+
+    /**
+     * 显示Toast提示
+     *
+     * @param resId 提示文本资源ID
+     */
+    private static void showToast(int resId) {
+        makeText(mHandler.application).setText(resId).show();
+    }
+
+    /**
+     * 短时间Toast提示
+     *
+     * @param message 要提示的信息
+     */
+    public static void showShortMessage(@NonNull String message) {
+        makeText(mHandler.application).setText(message).show();
+    }
+
+    /**
+     * 短时间Toast提示
+     *
+     * @param resId 资源ID，在res/string.xml中配置的字符ID
+     */
+    public static void showShortMessage(@StringRes int resId) {
+        makeText(mHandler.application).setText(resId).show();
+    }
+
+    /**
+     * 短时间自定义显示布局Toast提示,Toast显示在默认的位置
+     *
+     * @param layoutId 自定义显示布局文件ID
+     * @param message  显示字符串文本
+     */
+    public static void showShortMessage(@LayoutRes int layoutId, @NonNull String message) {
+        makeText(mHandler.application).setView(layoutId).setText(message).show();
+    }
+
+
+    /**
+     * 长时间Toast提示
+     *
+     * @param message 要提示的信息
+     */
+    public static void showLongMessage(@NonNull String message) {
+        makeText(mHandler.application).setText(message).setDuration(ToastCompat.LENGTH_LONG).show();
+    }
+
+    /**
+     * 长时间Toast提示
+     *
+     * @param resId 资源ID
+     */
+    public static void showLongMessage(@StringRes int resId) {
+        makeText(mHandler.application).setText(resId).setDuration(ToastCompat.LENGTH_LONG).show();
+    }
+
+    /**
+     * 自定义Toast提示停留时间
+     *
+     * @param message  要提示的信息
+     * @param duration 停留时间毫秒数，以毫秒为单位
+     */
+    public static void showMessage(@NonNull String message, int duration) {
+        makeText(mHandler.application).setText(message).setDuration(duration).show();
+    }
+
+    /**
+     * 长时间Toast提示
+     *
+     * @param resId 资源ID
+     */
+    public static void showMessage(@StringRes int resId) {
+        makeText(mHandler.application).setText(resId).show();
+    }
+
+    /**
+     * 自定义Toast提示停留时间
+     *
+     * @param message 要提示的信息
+     */
+    public static void showMessage(@NonNull String message) {
+        makeText(mHandler.application).setText(message).setDuration(ToastCompat.LENGTH_SHORT).show();
     }
 
     /**
@@ -621,45 +522,7 @@ public final class ToastCompat {
      * @param resId    要提示的信息，字符串资源ID
      * @param duration 停留时间毫秒数，以毫秒为单位
      */
-    public static void showToast(@LayoutRes int layoutId, int resId, @Duration int duration) {
-        createToast(ToastMsg.crateBuilder()
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .message(mContext.getString(resId))
-                .duration(duration)
-                .build());
-    }
-
-    /**
-     * 自定义Toast提示停留时间
-     *
-     * @param layoutId 停留时间毫秒数，以毫秒为单位
-     * @param resId    要提示的信息，字符串资源ID
-     */
-    public static void showToast(@LayoutRes int layoutId, @StringRes int resId) {
-        createToast(ToastMsg.crateBuilder()
-                .view(LayoutInflater.from(mContext).inflate(layoutId, null))
-                .message(mContext.getString(resId))
-                .build());
-    }
-
-    static void createToast(ToastMsg msg) {
-        if (checkThread()) {
-            if (null == mToastHelper) {
-                Toast toast = createToast(checkContext(), msg.message, msg.duration);
-                mToastHelper = new ToastQueueHandler(toast);
-            }
-            mToastHelper.add(msg);
-            mToastHelper.show();
-        } else {
-            mHandler.post(() -> createToast(msg));
-        }
-    }
-
-    static Context checkContext() {
-        Activity activity = getActivity();
-        if (activity != null) {
-            return activity;
-        }
-        return mContext;
+    public static void showToast(@StringRes int resId, int duration) {
+        makeText(mHandler.application).setText(resId).setDuration(duration).show();
     }
 }

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <attr name="ToastLayout" format="reference" />
-    <attr name="toastDefaultGravity" format="integer|reference" />
-    <attr name="toastDefaultYOffset" format="dimension|reference" />
-    <dimen name="toast_default_y_offset">24dp</dimen>
-</resources>

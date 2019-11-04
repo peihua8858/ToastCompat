@@ -1,83 +1,72 @@
 package com.fz.toast;
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.view.View;
-import android.widget.Toast;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
- * Toast 队列辅助类
+ * 吐司消息队列
  *
  * @author dingpeihua
  * @version 1.0
- * @date 2019/5/15 19:45
+ * @date 2019/10/17 11:04
  */
-final class ToastQueueHandler extends Handler {
-    final static int WHAT_SHOW = 22;
-    final static int WHAT_HIDE = 23;
-    final static int WHAT_ACTIVE = 24;
-    Toast mToast;
-    View mView;
-    /**
-     * 当前是否正在执行显示操作
-     */
-    private volatile boolean isShow;
+class ToastQueueHandler extends Handler {
+    static final int WHAT_ENQUEUE_TOAST = 0x01;
+    static final int WHAT_CANCEL_TOAST = 0x02;
+    static final int WHAT_NEXT_TOAST = 0x03;
 
-    public ToastQueueHandler(Toast mToast) {
+    static final long SHORT_DURATION_TIMEOUT = 2000;
+    static final long LONG_DURATION_TIMEOUT = 3500;
+
+    public ToastQueueHandler() {
         super(Looper.getMainLooper());
-        this.mToast = mToast;
-        mView = ToastCompat.makeDefaultView();
     }
 
     /**
      * 维护toast的队列
      */
-    private BlockingQueue<ToastMsg> mQueue = new LinkedBlockingQueue<>();
-
-    public void add(ToastMsg msg) {
-        if (mQueue.isEmpty() || !mQueue.contains(msg)) {
-            // 添加一个元素并返回true，如果队列已满，则返回false
-            if (!mQueue.offer(msg)) {
-                // 移除队列头部元素并添加一个新的元素
-                mQueue.poll();
-                mQueue.offer(msg);
-            }
-        }
-    }
-
-    void show() {
-        if (!isShow) {
-            isShow = true;
-            sendEmptyMessageDelayed(WHAT_SHOW, DELAY_TIMEOUT);
-        }
-    }
+    private Queue<ToastCompat> mQueue = new LinkedList<>();
+    ToastCompat mToast;
+    private boolean isShow;
+    Activity mActivity;
+    ToastLifecycle toastLifecycle;
+    Context application;
 
     @Override
     public void handleMessage(Message msg) {
         switch (msg.what) {
-            case WHAT_SHOW:
-                ToastMsg toastMsg = mQueue.peek();
-                if (toastMsg != null) {
-                    handleShow(toastMsg);
-                    sendEmptyMessageDelayed(WHAT_ACTIVE, ToastCompat.checkDuration(toastMsg.duration));
-                } else {
-                    isShow = false;
+            case WHAT_ENQUEUE_TOAST:
+                addToast(((ToastCompat) msg.obj));
+                if (!isShow) {
+                    isShow = true;
+                    sendEmptyMessage(WHAT_NEXT_TOAST);
                 }
                 break;
-            case WHAT_HIDE:
-                isShow = false;
-                mQueue.clear();
-                mToast.cancel();
+            case WHAT_CANCEL_TOAST:
+                mQueue.remove(msg.obj);
+                if (mToast == msg.obj) {
+                    removeMessages(WHAT_NEXT_TOAST);
+                    sendEmptyMessage(WHAT_NEXT_TOAST);
+                }
                 break;
-            case WHAT_ACTIVE:
-                mQueue.poll();
-                if (!mQueue.isEmpty()) {
-                    sendEmptyMessage(WHAT_SHOW);
-                } else {
+            case WHAT_NEXT_TOAST:
+                if (mToast != null) {
+                    mToast.mHelper.handleHide();
+                }
+                mToast = mQueue.poll();
+                if (mToast != null) {
+                    mToast.mHelper.mActivity = mActivity;
+                    mToast.mHelper.handleShow();
+                    sendEmptyMessageDelayed(WHAT_NEXT_TOAST, mToast.mHelper.mDuration == ToastCompat.LENGTH_LONG ? LONG_DURATION_TIMEOUT : SHORT_DURATION_TIMEOUT);
+                }
+                if (mQueue.isEmpty()) {
                     isShow = false;
                 }
                 break;
@@ -86,22 +75,53 @@ final class ToastQueueHandler extends Handler {
         }
     }
 
-    void handleShow(ToastMsg msg) {
-        mToast.setView(msg.view == null ? mView : msg.view);
-        if (msg.duration != null) {
-            mToast.setDuration(msg.duration);
+    public void addToast(ToastCompat msg) {
+        // 添加一个元素并返回true，如果队列已满，则返回false
+        if (!mQueue.offer(msg)) {
+            // 移除队列头部元素并添加一个新的元素
+            mQueue.poll();
+            mQueue.offer(msg);
         }
-        if (msg.duration != null) {
-            mToast.setDuration(msg.duration);
+        if (!isShow) {
+            isShow = true;
+            sendEmptyMessage(WHAT_NEXT_TOAST);
         }
-        mToast.setText(msg.message);
-        mToast.setGravity(msg.gravity, msg.xOffset, msg.yOffset);
-        mToast.show();
     }
 
-    /**
-     * 延迟时间
-     */
-    private static final int DELAY_TIMEOUT = 300;
+    public void cancel(ToastCompat toast) {
+        Message.obtain(this, WHAT_CANCEL_TOAST, toast).sendToTarget();
+    }
 
+    void register(Context context) {
+        if (context instanceof Activity) {
+            mActivity = (Activity) context;
+        }
+        application = context.getApplicationContext();
+        if (toastLifecycle == null) {
+            // 跟随 Activity 的生命周期
+            toastLifecycle = ToastLifecycle.register(this, context);
+        }
+    }
+
+    void onPause(Activity activity) {
+        if (activity == mActivity) {
+            mActivity = null;
+        }
+        if (mToast != null && mToast.mHelper.mActivity == activity) {
+            mToast.cancel();
+            mToast = null;
+        }
+        Iterator<ToastCompat> iterator = mQueue.iterator();
+        while (iterator.hasNext()) {
+            ToastCompat toastCompat = iterator.next();
+            if (toastCompat.mHelper.mActivity == activity) {
+                toastCompat.cancel();
+                mQueue.remove(toastCompat);
+            }
+        }
+    }
+
+    void onAttach(Activity activity) {
+        mActivity = activity;
+    }
 }
