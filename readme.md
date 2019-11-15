@@ -71,7 +71,7 @@ public class MyApplication extends Application {
 
 ```py
  repositories {
-        maven { url 'http://10.32.2.200:8081/repository/maven-public/' }
+        maven { url 'http://10.36.5.100:8081/repository/maven-public/' }
     }
 ```
 
@@ -79,7 +79,7 @@ public class MyApplication extends Application {
 
 ```py
 dependencies {
-    implementation 'com.fz.toast:ToastCompat:1.0.4'
+    implementation 'com.fz.toast:ToastCompat:1.0.8'
 }
 ```
 

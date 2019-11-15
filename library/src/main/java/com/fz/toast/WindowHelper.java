@@ -8,6 +8,7 @@ import android.graphics.PixelFormat;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.LayoutRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 /**
@@ -42,7 +44,7 @@ class WindowHelper {
     @ToastCompat.Duration
     int mDuration;
     @LayoutRes
-    int mLayoutRes;
+    static int mLayoutRes;
     CharSequence mText;
     @StringRes
     int mTextResId;
@@ -170,15 +172,31 @@ class WindowHelper {
     }
 
     static View makeView(Context context) {
-        Resources resources = context.getResources();
-        int toastLayout = resources.getIdentifier("transient_notification", "layout", "android");
-        return makeView(context, toastLayout);
+        if (mLayoutRes == 0) {
+            mLayoutRes = resolveResourceId(context, R.attr.toast_layout);
+        }
+        if (mLayoutRes == 0) {
+            Resources resources = context.getResources();
+            mLayoutRes = resources.getIdentifier("transient_notification", "layout", "android");
+        }
+        return makeView(context, mLayoutRes);
     }
 
     static View makeView(Context context, @LayoutRes int layoutId) {
         LayoutInflater inflate = LayoutInflater.from(context);
         View view = inflate.inflate(layoutId, null);
         return view;
+    }
+
+    static int resolveResourceId(@NonNull Context context, int attrId) {
+        if (context instanceof Activity) {
+            TypedValue outValue = new TypedValue();
+            boolean result = context.getTheme().resolveAttribute(attrId, outValue, true);
+            if (result) {
+                return outValue.resourceId;
+            }
+        }
+        return 0;
     }
 
     /**

@@ -3,7 +3,6 @@ package com.fz.toastcompat;
 import android.app.Application;
 import android.content.Context;
 
-import com.fz.toast.ToastCompat;
 import com.squareup.leakcanary.LeakCanary;
 
 public class MyApplication extends Application {
