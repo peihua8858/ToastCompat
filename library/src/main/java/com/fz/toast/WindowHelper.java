@@ -189,12 +189,10 @@ class WindowHelper {
     }
 
     static int resolveResourceId(@NonNull Context context, int attrId) {
-        if (context instanceof Activity) {
-            TypedValue outValue = new TypedValue();
-            boolean result = context.getTheme().resolveAttribute(attrId, outValue, true);
-            if (result) {
-                return outValue.resourceId;
-            }
+        TypedValue outValue = new TypedValue();
+        boolean result = context.getTheme().resolveAttribute(attrId, outValue, true);
+        if (result) {
+            return outValue.resourceId;
         }
         return 0;
     }
@@ -245,6 +243,10 @@ class WindowHelper {
         }
         CharSequence text = getText(ToastCompat.mHandler.application);
         Toast toast = Toast.makeText(ToastCompat.mHandler.application, text, mDuration);
+        View view = makeView(ToastCompat.mHandler.application);
+        TextView textView = getMessageView(view);
+        textView.setText(text);
+        toast.setView(view);
         if (mGravity != 0) {
             toast.setGravity(mGravity, mX, mY);
         }

@@ -79,7 +79,7 @@ public class MyApplication extends Application {
 
 ```py
 dependencies {
-    implementation 'com.fz.toast:ToastCompat:1.0.8'
+    implementation 'com.fz.toast:ToastCompat:1.0.9'
 }
 ```
 

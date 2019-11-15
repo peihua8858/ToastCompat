@@ -14,6 +14,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getApplicationContext().getTheme().applyStyle(R.style.AppTheme, false);
         setContentView(R.layout.activity_main);
 //        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
 //            if (!Settings.canDrawOverlays(this)) {

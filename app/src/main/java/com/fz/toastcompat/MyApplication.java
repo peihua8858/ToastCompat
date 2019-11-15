@@ -16,6 +16,7 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         context = this;
+        getTheme().applyStyle(R.style.AppTheme, true);
 //        ToastCompat.register(this);
         LeakCanary.install(this);
     }
