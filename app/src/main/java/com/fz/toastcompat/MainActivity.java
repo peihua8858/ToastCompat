@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -61,6 +62,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void show6(View view) {
+        Toast.makeText(this, "系统Toast", Toast.LENGTH_SHORT).show();
+    }
+
+    public void show7(View view) {
         startActivity(new Intent(this, SecondActivity.class));
     }
 }

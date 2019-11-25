@@ -22,6 +22,7 @@ import android.widget.Toast;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.core.app.NotificationManagerCompat;
 
 /**
  * Window 辅助类
@@ -62,7 +63,7 @@ class WindowHelper {
                 canDrawOverlays = true;
                 mParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
             }
-        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             //android 7.1不能加，否则报token null is not valid;
             mParams.type = WindowManager.LayoutParams.TYPE_TOAST;
         }
@@ -92,6 +93,9 @@ class WindowHelper {
                     return;
                 }
                 context = mNextView.getContext();
+            }
+            if (handleShowSystemToast()) {
+                return;
             }
             if (mNextView == null) {
                 mNextView = makeView(context);
@@ -236,10 +240,10 @@ class WindowHelper {
         return null;
     }
 
-    public void handleShowSystemToast() {
+    public boolean handleShowSystemToast() {
         if (!Utils.isNotificationsEnabled(ToastCompat.mHandler.application)) {
             Log.e("ToastCompat", "Notifications not Enabled.");
-            return;
+            return false;
         }
         CharSequence text = getText(ToastCompat.mHandler.application);
         Toast toast = Toast.makeText(ToastCompat.mHandler.application, text, mDuration);
@@ -251,6 +255,7 @@ class WindowHelper {
             toast.setGravity(mGravity, mX, mY);
         }
         toast.show();
+        return true;
     }
 
     private CharSequence getText(Context context) {

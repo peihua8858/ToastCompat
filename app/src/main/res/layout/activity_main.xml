@@ -60,6 +60,13 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="30dp"
                 android:onClick="show6"
+                android:text="显示系统Toast" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="30dp"
+                android:onClick="show7"
                 android:text="start second Activity" />
         </LinearLayout>
 

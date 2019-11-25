@@ -6,6 +6,6 @@ import androidx.core.app.NotificationManagerCompat;
 
 final class Utils {
     public static boolean isNotificationsEnabled(Context context) {
-        return NotificationManagerCompat.from(context).areNotificationsEnabled();
+        return context != null && NotificationManagerCompat.from(context).areNotificationsEnabled();
     }
 }
