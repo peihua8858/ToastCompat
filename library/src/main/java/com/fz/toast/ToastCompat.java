@@ -51,6 +51,10 @@ public class ToastCompat {
     final WindowHelper mHelper;
     static final ToastQueueHandler mHandler = new ToastQueueHandler();
 
+    public static void initialize(Context context) {
+        mHandler.register(context);
+    }
+
     /**
      * Construct an empty Toast object.  You must call {@link #setView} before you
      * can call {@link #show}.
