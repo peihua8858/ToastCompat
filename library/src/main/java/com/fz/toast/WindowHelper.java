@@ -79,7 +79,7 @@ class WindowHelper {
 
     public void handleShow() {
         if (mView == null && mNextView == null && mActivity == null) {
-            handleShowSystemToast();
+            handleShowSystemToast(ToastCompat.mHandler.application);
         } else if (mView != mNextView || mNextView == null) {
             // remove the old view if necessary
             handleHide();
@@ -93,7 +93,7 @@ class WindowHelper {
                 }
                 context = mNextView.getContext();
             }
-            if (handleShowSystemToast()) {
+            if (handleShowSystemToast(context)) {
                 return;
             }
             if (mNextView == null) {
@@ -239,14 +239,17 @@ class WindowHelper {
         return null;
     }
 
-    public boolean handleShowSystemToast() {
-        if (!Utils.isNotificationsEnabled(ToastCompat.mHandler.application)) {
+    public boolean handleShowSystemToast(Context context) {
+        if (context == null) {
+            context = ToastCompat.mHandler.application;
+        }
+        if (!Utils.isNotificationsEnabled(context)) {
             Log.e("ToastCompat", "Notifications not Enabled.");
             return false;
         }
-        CharSequence text = getText(ToastCompat.mHandler.application);
-        Toast toast = Toast.makeText(ToastCompat.mHandler.application, text, mDuration);
-        View view = makeView(ToastCompat.mHandler.application);
+        CharSequence text = getText(context);
+        Toast toast = Toast.makeText(context, text, mDuration);
+        View view = makeView(context);
         TextView textView = getMessageView(view);
         textView.setText(text);
         toast.setView(view);
