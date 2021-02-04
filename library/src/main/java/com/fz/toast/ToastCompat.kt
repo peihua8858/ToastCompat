@@ -60,21 +60,21 @@ fun checkContext(any: Any?): Context? {
     }
 }
 
-fun Any?.showToast(message: String) {
+fun Any?.showToast(message: CharSequence) {
     val cxt: Context? = checkContext(this)
     if (hasContext(cxt)) {
         ToastCompat.makeText(cxt).setText(message).show()
     }
 }
 
-fun Any?.showLongToast(message: String) {
+fun Any?.showLongToast(message: CharSequence) {
     val cxt: Context? = checkContext(this)
     if (hasContext(cxt)) {
         ToastCompat.makeText(cxt).setText(message).setDuration(ToastCompat.LENGTH_LONG).show()
     }
 }
 
-fun Any?.showToast(message: String, duration: Int) {
+fun Any?.showToast(message: CharSequence, duration: Int) {
     val cxt: Context? = checkContext(this)
     if (hasContext(cxt)) {
         ToastCompat.makeText(cxt).setText(message).setDuration(duration).show()
@@ -416,7 +416,7 @@ class ToastCompat(context: Context) {
          * @param duration 停留时间
          */
         @JvmStatic
-        private fun showToast(context: Context, message: String, duration: Int) {
+        private fun showToast(context: Context, message: CharSequence, duration: Int) {
             makeText(context).setText(message).setDuration(duration).show()
         }
 
@@ -436,7 +436,7 @@ class ToastCompat(context: Context) {
          * @param message 要提示的信息
          */
         @JvmStatic
-        fun showShortMessage(context: Context?, message: String) {
+        fun showShortMessage(context: Context?, message: CharSequence) {
             makeText(context).setText(message).show()
         }
 
@@ -457,7 +457,7 @@ class ToastCompat(context: Context) {
          * @param message  显示字符串文本
          */
         @JvmStatic
-        fun showShortMessage(context: Context?, @LayoutRes layoutId: Int, message: String) {
+        fun showShortMessage(context: Context?, @LayoutRes layoutId: Int, message: CharSequence) {
             makeText(context).setView(layoutId).setText(message).show()
         }
 
@@ -467,7 +467,7 @@ class ToastCompat(context: Context) {
          * @param message 要提示的信息
          */
         @JvmStatic
-        fun showLongMessage(context: Context?, message: String) {
+        fun showLongMessage(context: Context?, message: CharSequence) {
             makeText(context).setText(message).setDuration(LENGTH_LONG).show()
         }
 
@@ -488,7 +488,7 @@ class ToastCompat(context: Context) {
          * @param duration 停留时间毫秒数，以毫秒为单位
          */
         @JvmStatic
-        fun showMessage(context: Context?, message: String, duration: Int) {
+        fun showMessage(context: Context?, message: CharSequence, duration: Int) {
             makeText(context).setText(message).setDuration(duration).show()
         }
 
@@ -508,7 +508,7 @@ class ToastCompat(context: Context) {
          * @param message 要提示的信息
          */
         @JvmStatic
-        fun showMessage(context: Context?, message: String) {
+        fun showMessage(context: Context?, message: CharSequence) {
             makeText(context).setText(message).setDuration(LENGTH_SHORT).show()
         }
 
@@ -530,7 +530,7 @@ class ToastCompat(context: Context) {
          * @param duration 停留时间
          */
         @JvmStatic
-        private fun showToast(message: String, duration: Int) {
+        private fun showToast(message: CharSequence, duration: Int) {
             makeText(mHandler.application).setText(message).setDuration(duration).show()
         }
 
@@ -550,7 +550,7 @@ class ToastCompat(context: Context) {
          * @param message 要提示的信息
          */
         @JvmStatic
-        fun showShortMessage(message: String) {
+        fun showShortMessage(message: CharSequence) {
             makeText(mHandler.application).setText(message).show()
         }
 
@@ -571,7 +571,7 @@ class ToastCompat(context: Context) {
          * @param message  显示字符串文本
          */
         @JvmStatic
-        fun showShortMessage(@LayoutRes layoutId: Int, message: String) {
+        fun showShortMessage(@LayoutRes layoutId: Int, message: CharSequence) {
             makeText(mHandler.application).setView(layoutId).setText(message).show()
         }
 
@@ -581,7 +581,7 @@ class ToastCompat(context: Context) {
          * @param message 要提示的信息
          */
         @JvmStatic
-        fun showLongMessage(message: String) {
+        fun showLongMessage(message: CharSequence) {
             makeText(mHandler.application).setText(message).setDuration(LENGTH_LONG).show()
         }
 
@@ -602,7 +602,7 @@ class ToastCompat(context: Context) {
          * @param duration 停留时间毫秒数，以毫秒为单位
          */
         @JvmStatic
-        fun showMessage(message: String, duration: Int) {
+        fun showMessage(message: CharSequence, duration: Int) {
             makeText(mHandler.application).setText(message).setDuration(duration).show()
         }
 
@@ -622,7 +622,7 @@ class ToastCompat(context: Context) {
          * @param message 要提示的信息
          */
         @JvmStatic
-        fun showMessage(message: String) {
+        fun showMessage(message: CharSequence) {
             makeText(mHandler.application).setText(message).setDuration(LENGTH_SHORT).show()
         }
 
