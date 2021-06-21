@@ -1,11 +1,11 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 apply plugin: 'maven'
-def buildType = "SNAPSHOT"/* "release"*/
-def mavenUrl = "http://10.32.5.200:8989/repository/globalegrow/"
-def mavenUrlSnapshot = "http://10.32.5.200:8989/repository/globalegrow-snapshot/"
+def buildType = /*"SNAPSHOT"*/ "release"
+def mavenUrl = "http://10.8.31.254:8989/repository/globalegrow/"
+def mavenUrlSnapshot = "http://10.8.31.254:8989/repository/globalegrow-snapshot/"
 def mavenUserName = "longxl"
 def mavenPwd = "longxl123"
-def sdkVersionName = "1.0.12"
+def sdkVersionName = "1.0.13"
 def sdkVersionNameSnapshot = "1.0.14-SNAPSHOT"
 def pomName = "ToastCompat"
 def pomGroupId = "com.fz.toast"
