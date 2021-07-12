@@ -33,7 +33,9 @@ internal class ToastLifecycle private constructor(private val mHandler: ToastQue
     }
 
     override fun onActivityStopped(activity: Activity) {}
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle?) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+
+    }
     override fun onActivityDestroyed(activity: Activity) {}
 
     companion object {
@@ -44,5 +46,4 @@ internal class ToastLifecycle private constructor(private val mHandler: ToastQue
             return toastLifecycle
         }
     }
-
 }
