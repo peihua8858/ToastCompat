@@ -36,6 +36,3 @@ dependencies {
 apply plugin: 'com.github.dcendents.android-maven'
 group='com.github.ToastCompat'
 //apply from: "push_maven.gradle"
-repositories {
-    mavenCentral()
-}
