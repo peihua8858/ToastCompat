@@ -1,3 +1,4 @@
+[![](https://jitpack.io/v/peihua8858/ToastCompat.svg)](https://jitpack.io/#peihua8858/ToastCompat)
 # Android 自定义Toast
 
 解决通知栏关闭无法显示toast，支持队列顺序显示，支持自定义toast布局
