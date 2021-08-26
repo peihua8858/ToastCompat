@@ -141,7 +141,7 @@ class WindowHelper internal constructor(context: Context) {
     }
 
     private fun handleShowSystemToast(cxt: Context?): Boolean {
-        var context: Context? = cxt
+        var context: Context? = cxt?.applicationContext
         if (context == null) {
             context = checkContext()
         }

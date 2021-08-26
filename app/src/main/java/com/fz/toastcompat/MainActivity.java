@@ -28,12 +28,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void show1(View v) {
-        showToast
         for (int i = 0; i < 3; i++) {
-            showToast(this,"我是第" + (i + 1) + "个吐司");
-//            ToastCompat.makeText(this, R.layout.toast_custom_view)
-//                    .setText("我是第" + (i + 1) + "个吐司")
-//                    .setDuration(ToastCompat.LENGTH_SHORT).show();
+//            showToast(this,"我是第" + (i + 1) + "个吐司");
+            ToastCompat.makeText(this, R.layout.toast_custom_view)
+                    .setText("我是第" + (i + 1) + "个吐司")
+                    .setDuration(ToastCompat.LENGTH_SHORT).show();
         }
     }
 
@@ -41,17 +40,17 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {//我是子线程中弹出的吐司
-                showToast(MainActivity.this, "Tap the back key twice to exit the app.");
-//                ToastCompat.makeText(MyApplication.getContext())
-//                        .setText("Tap the back key twice to exit the app.")
-//                        .setGravity(Gravity.BOTTOM, 0, 96).show();
+//                showToast(MainActivity.this, "Tap the back key twice to exit the app.");
+                ToastCompat.makeText(MyApplication.getContext())
+                        .setText("Tap the back key twice to exit the app.")
+                        .setGravity(Gravity.BOTTOM, 0, 96).show();
             }
         }).start();
     }
 
     public void show3(View v) {
-        showToast(this,"单个吐司显示");
-//        ToastCompat.makeText(this, "单个吐司显示", ToastCompat.LENGTH_SHORT).show();
+//        showToast(this,"单个吐司显示");
+        ToastCompat.makeText(this, "单个吐司显示", ToastCompat.LENGTH_SHORT).show();
     }
 
     public void show4(View v) {
