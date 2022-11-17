@@ -43,6 +43,7 @@ class WindowHelper internal constructor(context: Context) {
 
     @StringRes
     var mTextResId = 0
+
     var canDrawOverlays = false
     fun handleShow() {
         if (mView == null && mNextView == null && mActivity == null) {
@@ -73,7 +74,11 @@ class WindowHelper internal constructor(context: Context) {
             // We can resolve the Gravity here by using the Locale for getting
             // the layout direction
             val config = context.resources.configuration
-            val gravity = Gravity.getAbsoluteGravity(mGravity, config.layoutDirection)
+            val gravity = if (ToastCompat.isChangeOffset) {
+                Gravity.getAbsoluteGravity(ToastCompat.mGravity, config.layoutDirection)
+            } else {
+                Gravity.getAbsoluteGravity(mGravity, config.layoutDirection)
+            }
             mParams.gravity = gravity
             if (gravity and Gravity.HORIZONTAL_GRAVITY_MASK == Gravity.FILL_HORIZONTAL) {
                 mParams.horizontalWeight = 1.0f
@@ -81,8 +86,8 @@ class WindowHelper internal constructor(context: Context) {
             if (gravity and Gravity.VERTICAL_GRAVITY_MASK == Gravity.FILL_VERTICAL) {
                 mParams.verticalWeight = 1.0f
             }
-            mParams.x = mX
-            mParams.y = mY
+            mParams.x = if (ToastCompat.isChangeOffset) ToastCompat.mXOffset else mX
+            mParams.y = if (ToastCompat.isChangeOffset) ToastCompat.mYOffset else mY
             mParams.verticalMargin = mVerticalMargin
             mParams.horizontalMargin = mHorizontalMargin
             mParams.packageName = packageName
@@ -119,7 +124,8 @@ class WindowHelper internal constructor(context: Context) {
         // treat toasts as notifications since they are used to
         // announce a transient piece of information to the user
         val event = AccessibilityEvent.obtain(
-                AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED)
+            AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED
+        )
         event.className = javaClass.name
         event.packageName = mPackageName
         mView!!.dispatchPopulateAccessibilityEvent(event)
@@ -158,7 +164,9 @@ class WindowHelper internal constructor(context: Context) {
         val textView = getMessageView(view)
         textView.text = text
         toast.view = view
-        if (mGravity != 0) {
+        if (ToastCompat.isChangeOffset) {
+            toast.setGravity(ToastCompat.mGravity, ToastCompat.mXOffset, ToastCompat.mYOffset)
+        } else if (ToastCompat.mGravity != 0) {
             toast.setGravity(mGravity, mX, mY)
         }
         toast.show()

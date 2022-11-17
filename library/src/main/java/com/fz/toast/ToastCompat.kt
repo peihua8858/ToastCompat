@@ -1,5 +1,6 @@
 package com.fz.toast
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.app.Dialog
@@ -16,9 +17,13 @@ import androidx.annotation.StringRes
 import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.Fragment
 
+@SuppressLint("StaticFieldLeak")
 @JvmField
 internal val mHandler = ToastQueueHandler()
+
+@SuppressLint("StaticFieldLeak")
 internal lateinit var mContext: Context
+
 /**
  * Return the horizontal margin.
  */
@@ -122,8 +127,10 @@ class ToastCompat(context: Context) {
     @JvmField
     internal val mHelper: WindowHelper
     private fun compatGetToastDefaultGravity(context: Context): Int {
-        val toastDefaultGravityId = Resources.getSystem().getIdentifier("config_toastDefaultGravity",
-                "integer", "android")
+        val toastDefaultGravityId = Resources.getSystem().getIdentifier(
+            "config_toastDefaultGravity",
+            "integer", "android"
+        )
         return if (toastDefaultGravityId != 0) {
             context.resources.getInteger(toastDefaultGravityId)
         } else {
@@ -284,6 +291,10 @@ class ToastCompat(context: Context) {
      * Return the horizontal margin.
      */
     companion object {
+        internal var mGravity = 0
+        internal var mXOffset = 0
+        internal var mYOffset = 0
+        internal var isChangeOffset = false
 
         /**
          * Show the view or text notification for a short period of time.  This time
@@ -300,11 +311,20 @@ class ToastCompat(context: Context) {
          * @see {@link Toast.setDuration}
          */
         const val LENGTH_LONG = Toast.LENGTH_LONG
-
         @JvmStatic
         fun initialize(context: Context) {
             mContext = context
             mHandler.register(context)
+        }
+
+        @JvmStatic
+        fun initialize(context: Context, gravity: Int, xOffset: Int, yOffset: Int) {
+            mContext = context
+            mHandler.register(context)
+            mGravity = gravity
+            mXOffset = xOffset
+            mYOffset = yOffset
+            isChangeOffset = true
         }
 
         /**
@@ -326,7 +346,12 @@ class ToastCompat(context: Context) {
          * If looper is null, Looper.myLooper() is used.
          */
         @JvmStatic
-        fun makeText(context: Context, @LayoutRes layoutRes: Int, text: CharSequence, @Duration duration: Int): ToastCompat {
+        fun makeText(
+            context: Context,
+            @LayoutRes layoutRes: Int,
+            text: CharSequence,
+            @Duration duration: Int
+        ): ToastCompat {
             val result = ToastCompat(checkedCxt(checkContext(context)))
             result.setText(text)
             result.setView(layoutRes)
@@ -648,8 +673,10 @@ class ToastCompat(context: Context) {
     init {
         val applicationContext = context.applicationContext
         mHelper = WindowHelper(applicationContext)
-        val offsetY = applicationContext.resources.getDimensionPixelSize(Resources.getSystem()
-                .getIdentifier("toast_y_offset", "dimen", "android"))
+        val offsetY = applicationContext.resources.getDimensionPixelSize(
+            Resources.getSystem()
+                .getIdentifier("toast_y_offset", "dimen", "android")
+        )
         val gravity = compatGetToastDefaultGravity(applicationContext)
         setGravity(gravity, 0, offsetY)
         mHandler.register(context)
