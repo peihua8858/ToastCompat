@@ -11,7 +11,6 @@
 -[如何引用](#如何引用)<br>
 -[进阶使用](#进阶使用)<br>
 -[演示效果](#演示效果)<br>
--[混淆配置](#混淆配置)<br>
 -[如何提Issues](https://github.com/peihua8858/ToastCompat/wiki/%E5%A6%82%E4%BD%95%E6%8F%90Issues%3F)<br>
 -[License](#License)<br>
 
