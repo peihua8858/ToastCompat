@@ -110,17 +110,9 @@ public class MyApplication extends Application {
 
 ## 演示效果
 
-|          单选图片          |           预览           |           相册           |
-|:----------------------:|:----------------------:|:----------------------:|
-| ![](images/image1.jpg) | ![](images/image7.jpg) | ![](images/image3.jpg) |
-
-|          多选图片          |           预览           |           相册           |
-|:----------------------:|:----------------------:|:----------------------:|
-| ![](images/image5.jpg) | ![](images/image8.jpg) | ![](images/image9.jpg) |
-
-|           单图裁剪           |          多图裁剪           |
-|:------------------------:|:-----------------------:|
-|  ![](images/image4.jpg)  | ![](images/image10.jpg) |
+|          演示          |
+|:----------------------:|
+| ![](images/image1.gif) | 
 
 ## License
 ```sh
